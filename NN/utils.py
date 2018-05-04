@@ -47,15 +47,11 @@ class ReaderSubmitor:
         for batch in pd.read_csv(self.train_path, sep=";", chunksize=chunksize):
             X_train = batch[self.train_cols]
             y_train = batch['label']
-            train_csr = None
             print('Start making chunk {}'.format(self.chunk_count))
             self.chunk_count += 1
+            train_csr = list()
             for j, column in enumerate(self.train_cols):
-                if j == 0:
-                    train_csr = self.prepare_one_hot(X_train[column], all_values[column])
-                else:
-                    one_hot_csr = self.prepare_one_hot(X_train[column], all_values[column])
-                    train_csr = hstack([train_csr, one_hot_csr])
+                train_csr.append(self.prepare_one_hot(X_train[column], all_values[column]))
             yield train_csr, y_train
 
     def read_test(self):

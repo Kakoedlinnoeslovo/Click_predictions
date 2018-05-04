@@ -13,19 +13,32 @@ class Network:
         self.model = None
 
     def build_model(self, hidden_layers, shapes, reg_lam=0.001):
-        x01 = Input(shape=(X_train_shape1,))
-        x1 = Dense(hidden_layers[0], kernel_regularizer=regularizers.l2(reg_lam))(x01)
-        x1 = BatchNormalization()(x1)
-        x1 = Activation('relu')(x1)
+        x_s = list()
+        x0_s = list()
+        for shape in shapes:
+            #its objects: movie, user or something else
+            x01 = Input(shape=(shape,))
+            x0_s.append(x01)
+            x1 = Dense(hidden_layers[0], kernel_regularizer=regularizers.l2(reg_lam))(x01)
+            x1 = BatchNormalization()(x1)
+            x1 = Activation('relu')(x1)
+            x_s.append(x1)
 
-        x02 = Input(shape=(X_train_shape1,))
-        x2 = Dense(hidden_layers[0], kernel_regularizer=regularizers.l2(reg_lam))(x02)
-        x2 = BatchNormalization()(x2)
-        x2 = Activation('relu')(x2)
+        x_seen = list()
+        x_emb = list()
+        for i, x_i in enumerate(x_s):
+            for j, x_j in enumerate(x_s):
+                    if i!=j and ([i,j] not in x_seen or [j,i] not in x_seen):
+                        x = keras.layers.dot([x_i, x_j], axes=1)
+                        x_seen.append([i,j])
+                        x_seen.append([j,i])
+                        x_emb.append(x)
+                    else:
+                        continue
 
-        x = keras.layers.dot([x1, x2], axes=1)
+        x = keras.layers.concatenate(x_emb, axis=-1)
 
-        x3 = keras.layers.concatenate([x01, x02], axis=-1)
+        x3 = keras.layers.concatenate(x0_s, axis=-1)
         x4 = Dense(hidden_layers[1])(x3)
         x4 = BatchNormalization()(x4)
         x4 = Activation('relu')(x4)
@@ -34,7 +47,7 @@ class Network:
         # x = Flatten()(x)
         x = Dense(1)(x_out)
         x = Activation('sigmoid')(x)
-        model = Model(inputs=[x01, x02], output=x)
+        model = Model(inputs=x0_s, output=x)
         self.model = model
         model.summary()
 
