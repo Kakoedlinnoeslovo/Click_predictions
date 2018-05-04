@@ -20,7 +20,7 @@ class ReaderSubmitor:
 		self.chunk_count = 0
 
 	def get_values(self):
-		data = pd.read_csv(self.train_path, sep=";")
+		data = pd.read_csv(self.train_path, sep=";", nrows=1000)
 		all_values = dict()
 		print('Start counting values in column')
 		for column in tqdm(data.columns):
@@ -47,7 +47,7 @@ class ReaderSubmitor:
 			train_csr = None
 			print('Start making chunk {}'.format(self.chunk_count))
 			self.chunk_count+=1
-			for j, column in enumerate(X_train.columns):
+			for j, column in enumerate(self.train_cols):
 				if j == 0:
 					train_csr = self.prepare_one_hot(X_train[column], all_values[column])
 				else:
@@ -75,9 +75,3 @@ def make_prediction(preds_proba):
 			f.write("{},{}\n".format(i, predictions[i - 1]))
 	print("result ready...", n)
 
-
-if __name__ == "__main__":
-	reader = ReaderPredictor()
-	chunk = reader.next_chunk(chunksize=100)
-	print(next(chunk))
-	print('here')
