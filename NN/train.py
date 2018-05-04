@@ -12,7 +12,7 @@ class Network:
     def __init__(self):
         self.model = None
 
-    def build_model(self, hidden_layers, X_train_shape1, reg_lam=0.001):
+    def build_model(self, hidden_layers, shapes, reg_lam=0.001):
         x01 = Input(shape=(X_train_shape1,))
         x1 = Dense(hidden_layers[0], kernel_regularizer=regularizers.l2(reg_lam))(x01)
         x1 = BatchNormalization()(x1)
@@ -44,7 +44,7 @@ class Network:
         else:
             self.model.compile(optimizer=optimizers.Adam(lr=learning_rate), loss='binary_crossentropy',
                                metrics=['accuracy'])
-            self.model.fit(X_train, y_train, batch_size=batch_size, niter=niter)
+            self.model.fit(X_train, y_train, batch_size=batch_size, epochs=niter)
 
     def predict(self, X_test):
         y_pred = self.model.predict(X_test)
@@ -63,7 +63,7 @@ def main():
     model.build_model(hidden_layers=[32,16], X_train_shape1=matrix.shape[1])
 
     for X_train, y_train in tqdm(reader.next_chunk(all_values=all_values, chunksize=100)):
-        model.fit(X_train.todense(), y_train.todense())
+        model.fit(X_train, y_train)
 
 
 if __name__ == '__main__':
