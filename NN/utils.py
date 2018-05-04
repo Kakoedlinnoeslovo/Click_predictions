@@ -8,7 +8,7 @@ from scipy.sparse import hstack
 from sklearn import preprocessing
 
 
-class ReaderPredictor:
+class ReaderSubmitor:
 	def __init__(self):
 		self.train_path = './data/train.csv'
 		self.test_path = './data/test/csv'
@@ -37,6 +37,7 @@ class ReaderPredictor:
 			one_hot_array[i] = value
 		one_hot_csr = csr_matrix(one_hot_array)
 		return one_hot_csr
+
 
 	def next_chunk(self, all_values, chunksize=1000000):
 		for batch in pd.read_csv(self.train_path, sep=";", chunksize=chunksize):
