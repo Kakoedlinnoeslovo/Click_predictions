@@ -80,12 +80,18 @@ def main():
 	model.build_model(hidden_layers=[32, 16], shapes=shapes)
 
 	print('start fitting network')
-	for X_train, y_train in tqdm(reader.next_chunk(all_values=all_values, chunksize=100, is_train=True)):
+	for X_train, y_train in tqdm(reader.next_chunk(all_values=all_values,
+	                                               chunksize=100,
+	                                               is_train=True,
+	                                               nrows=1000)):
 		model.fit(X_train, y_train)
 
 	print('start making prediction')
 	predict_proba = list()
-	for X_test, y_test in tqdm(reader.next_chunk(all_values=all_values, chunksize=100, is_train=False)):
+	for X_test, y_test in tqdm(reader.next_chunk(all_values=all_values,
+	                                             chunksize=100,
+	                                             is_train=False,
+	                                             nrows=1000)):
 		predict_proba.extend(model.predict(X_test))
 
 	print('start forming submit file')

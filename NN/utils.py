@@ -43,13 +43,13 @@ class ReaderSubmitor:
 		one_hot_csr = csr_matrix(one_hot_array)
 		return one_hot_csr
 
-	def next_chunk(self, all_values, chunksize=1000000, is_train=True):
+	def next_chunk(self, all_values, chunksize=1000000, is_train=True, nrows = 1000):
 		if is_train:
 			path = self.train_path
 		else:
 			path  = self.test_path
 
-		for batch in pd.read_csv(path, sep=";", chunksize=chunksize):
+		for batch in pd.read_csv(path, sep=";", chunksize=chunksize, nrows=nrows):
 			X_train = batch[self.train_cols]
 			y_train = batch['label']
 			print('Start making chunk {}'.format(self.chunk_count))
