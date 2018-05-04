@@ -62,10 +62,8 @@ def main():
 
     model.build_model(hidden_layers=[32,16], X_train_shape1=matrix.shape[1])
 
-    for chunk in tqdm(reader.next_chunk(all_values=all_values, chunksize=100)):
-        X_train, y_train = next(chunk)
-        #X_train_numpy = X_train.todense()
-        model.fit(X_train, y_train)
+    for X_train, y_train in tqdm(reader.next_chunk(all_values=all_values, chunksize=100)):
+        model.fit(X_train.todense(), y_train.todense())
 
 
 if __name__ == '__main__':
