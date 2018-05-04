@@ -1,6 +1,6 @@
 import pandas as pd
 import gc
-import tqdm
+from tqdm import tqdm
 import time
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -10,19 +10,20 @@ from sklearn import preprocessing
 
 class ReaderSubmitor:
 	def __init__(self):
-		self.train_path = './data/train.csv'
-		self.test_path = './data/test/csv'
+		self.train_path = '../data/train.csv'
+		self.test_path = '../data/test/csv'
 		self.train_cols = ['timestamp', 'C1', 'C2', 'C3', 'C4',
 		                   'C5', 'C6', 'C7', 'C9',
 		                   'C10', 'C11', 'C12', 'l1', 'l2']
 
 		self.label_bin = preprocessing.LabelBinarizer(sparse_output=True)
-
+		self.chunk_count = 0
 
 	def get_values(self):
 		data = pd.read_csv(self.train_path, sep=";")
 		all_values = dict()
-		for column in data.columns:
+		print('Start counting values in column')
+		for column in tqdm(data.columns):
 			all_values[column] = set(data[column])
 		return all_values
 
@@ -44,6 +45,8 @@ class ReaderSubmitor:
 			X_train = batch[self.train_cols]
 			y_train = batch['label']
 			train_csr = None
+			print('Start making chunk {}'.format(self.chunk_count))
+			self.chunk_count+=1
 			for j, column in enumerate(X_train.columns):
 				if j == 0:
 					train_csr = self.prepare_one_hot(X_train[column], all_values[column])
