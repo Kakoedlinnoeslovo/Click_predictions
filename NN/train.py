@@ -8,7 +8,6 @@ from keras import optimizers
 from tqdm import tqdm
 from utils import make_prediction
 import argparse
-from sklearn import preprocessing
 
 
 class Network:
@@ -70,10 +69,10 @@ class Network:
 def main(nsteps, chunksize):
 	print('Init model with nsteps: {}, chunksize: {} \n'.format(nsteps, chunksize))
 	reader = ReaderSubmitor()
-	all_values, data_len = reader.get_values()
+	reader.get_values()
 	model = Network()
 
-	chunk_temp = reader.next_chunk(all_values=all_values, chunksize=1)
+	chunk_temp = reader.next_chunk(chunksize=1)
 	X_train_temp, y_train_temp = next(chunk_temp)
 	shapes = list()
 	for matrix in X_train_temp:
@@ -85,8 +84,7 @@ def main(nsteps, chunksize):
 
 	print('start fitting network')
 	train_step = 0
-	for X_train, y_train in tqdm(reader.next_chunk(all_values=all_values,
-	                                               chunksize=chunksize,
+	for X_train, y_train in tqdm(reader.next_chunk(chunksize=chunksize,
 	                                               is_train=True)):
 		print()
 		model.fit(X_train, y_train)
@@ -99,16 +97,16 @@ def main(nsteps, chunksize):
 
 	print('start making prediction')
 	predict_proba = list()
-	for X_test, y_test in tqdm(reader.next_chunk(all_values=all_values,
-	                                             chunksize=chunksize,
+	for X_test, y_test in tqdm(reader.next_chunk(chunksize=chunksize,
 	                                             is_train=False)):
 		predict_proba.extend(model.predict(X_test))
 
 	print('start forming submit file')
 	make_prediction(predict_proba)
+
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = 'set how many steps you want')
-	parser.add_argument('--train_step', type=int)
+	parser.add_argument('--nsteps', type=int)
 	parser.add_argument('--chunksize', type=int)
 	args = parser.parse_args()
-	main(args.train_step, args.chunksize)
+	main(nsteps = args.nsteps, chunksize=args.chunksize)

@@ -4,9 +4,8 @@ from tqdm import tqdm
 import time
 import numpy as np
 from scipy.sparse import csr_matrix
-from scipy.sparse import hstack
-from sklearn import preprocessing
-from sklearn.preprocessing import OneHotEncoder
+import pickle
+
 
 
 class ReaderSubmitor:
@@ -16,34 +15,32 @@ class ReaderSubmitor:
 		self.train_cols = ['C1', 'C2', 'C3', 'C4','C5', 'C6', 'C7', 'C8', 'C9',
 		                   'C10', 'C11', 'C12', 'l1', 'l2']
 
-		self.label_bin = preprocessing.LabelBinarizer(sparse_output=True)
 		self.chunk_count = 0
-		self.one = OneHotEncoder(sparce = True)
 
 
 	def get_values(self):
 		data = pd.read_csv(self.train_path, sep=";")
-
-		data_len = data.shape[0]
 		all_values = dict()
 
+		print('Start counting values in train column')
+		for column in tqdm(self.train_cols):
+			all_values[column] = set(data[column])
+			print('The length of {} equal {}\n'.format(column, len(all_values[column])))
 		del data
-		train = data[self.train_cols]
-		self.one.fit(train)
+		gc.collect()
 
-		#print('Start counting values in train column')
-		#for column in tqdm(self.train_cols):
-		#	all_values[column] = set(data[column])
+		print('Start counting values in test column')
+		data = pd.read_csv(self.test_path, sep=";")
+		for column in tqdm(self.train_cols):
+			all_values[column].update(set(data[column]))
+			print('The length of {} equal {}\n'.format(column, len(all_values[column])))
 
-		#del data
-		#gc.collect()
-		#print('Start counting values in test column')
-
-		#data = pd.read_csv(self.test_path, sep=";")
-		#for column in tqdm(self.train_cols):
-		#	all_values[column].update(set(data[column]))
-
-		#return all_values, data_len
+			with open('../data/{}.dump'.format(str(column)), 'wb') as fp:
+				pickle.dump(all_values[column], fp)
+		del data
+		gc.collect()
+		del all_values
+		gc.collect()
 
 
 	def prepare_one_hot(self, data_column, col_set):
@@ -65,7 +62,7 @@ class ReaderSubmitor:
 		return one_hot_csr
 
 
-	def next_chunk(self, all_values, chunksize=1000000, is_train=True):
+	def next_chunk(self, chunksize=1000000, is_train=True):
 		if is_train:
 			path = self.train_path
 		else:
@@ -77,8 +74,10 @@ class ReaderSubmitor:
 			print('Start making chunk {}'.format(self.chunk_count))
 			self.chunk_count += 1
 			train_csr = list()
-			for j, column in enumerate(self.train_cols):
-				train_csr.append(self.prepare_one_hot(X_train[column], all_values[column]))
+			for column in self.train_cols:
+				with open('../data/{}.dump'.format(str(column)), 'rb') as fp:
+					temp_column = pickle.load(fp)
+				train_csr.append(self.prepare_one_hot(X_train[column], temp_column))
 			yield train_csr, y_train
 
 
