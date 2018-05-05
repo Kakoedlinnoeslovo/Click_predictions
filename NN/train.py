@@ -7,6 +7,8 @@ from keras import regularizers
 from keras import optimizers
 from tqdm import tqdm
 from utils import make_prediction
+import argparse
+from sklearn import preprocessing
 
 
 class Network:
@@ -37,14 +39,14 @@ class Network:
 				else:
 					continue
 
-		x = keras.layers.concatenate(x_emb, axis=-1)
+		x_out = keras.layers.concatenate(x_emb, axis=-1)
 
-		x3 = keras.layers.concatenate(x0_s, axis=-1)
-		x4 = Dense(hidden_layers[1])(x3)
-		x4 = BatchNormalization()(x4)
-		x4 = Activation('relu')(x4)
+		#x3 = keras.layers.concatenate(x0_s, axis=-1)
+		#x4 = Dense(hidden_layers[1])(x3)
+		#x4 = BatchNormalization()(x4)
+		#x4 = Activation('relu')(x4)
 
-		x_out = keras.layers.concatenate([x, x4], axis=-1)
+		#x_out = keras.layers.concatenate([x, x4], axis=-1)
 		# x = Flatten()(x)
 		x = Dense(1)(x_out)
 		x = Activation('sigmoid')(x)
@@ -65,9 +67,10 @@ class Network:
 		return y_pred
 
 
-def main():
+def main(nsteps, chunksize):
+	print('Init model with nsteps: {}, chunksize: {} \n'.format(nsteps, chunksize))
 	reader = ReaderSubmitor()
-	all_values, data_len = reader.get_values(nrows=1000)
+	all_values, data_len = reader.get_values()
 	model = Network()
 
 	chunk_temp = reader.next_chunk(all_values=all_values, chunksize=1)
@@ -76,26 +79,36 @@ def main():
 	for matrix in X_train_temp:
 		shapes.append(matrix.shape[1])
 
+
 	print('start building network')
 	model.build_model(hidden_layers=[32, 16], shapes=shapes)
 
 	print('start fitting network')
+	train_step = 0
 	for X_train, y_train in tqdm(reader.next_chunk(all_values=all_values,
-	                                               chunksize=100,
-	                                               is_train=True,
-	                                               nrows=1000)):
+	                                               chunksize=chunksize,
+	                                               is_train=True)):
+		print()
 		model.fit(X_train, y_train)
+		print('Train step: {}'.format(train_step))
+		train_step+=1
+		if train_step == nsteps:
+			break
+
+	print('Done fitting on step: {}'.format(train_step))
 
 	print('start making prediction')
 	predict_proba = list()
 	for X_test, y_test in tqdm(reader.next_chunk(all_values=all_values,
-	                                             chunksize=100,
-	                                             is_train=False,
-	                                             nrows=1000)):
+	                                             chunksize=chunksize,
+	                                             is_train=False)):
 		predict_proba.extend(model.predict(X_test))
 
 	print('start forming submit file')
 	make_prediction(predict_proba)
-
 if __name__ == '__main__':
-	main()
+	parser = argparse.ArgumentParser(description = 'set how many steps you want')
+	parser.add_argument('--train_step', type=int)
+	parser.add_argument('--chunksize', type=int)
+	args = parser.parse_args()
+	main(args.train_step, args.chunksize)
